@@ -69,7 +69,7 @@ class StudentRepositoryTest {
     @Test
     void testFindStudentByGuardianName() {
         List<Student> students = studentRepository.findByGuardianName("Dany");
-        assertAll(() -> assertEquals(2, students.size()));
+        assertAll(() -> assertEquals(1, students.size()));
     }
 
     @Test
@@ -111,6 +111,6 @@ class StudentRepositoryTest {
     void getStudents() {
         List<Student> studentList = studentRepository.findAll();
 
-        assertAll(() -> assertEquals(1, studentList.size()));
+        assertAll(() -> assertEquals(2, studentList.size()));
     }
 }
