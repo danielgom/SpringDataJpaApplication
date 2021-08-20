@@ -1,5 +1,6 @@
 package com.java.springdatajpaapplication.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 
 import javax.persistence.*;
@@ -22,7 +23,6 @@ public class CourseMaterial {
     @OneToOne(
             cascade = CascadeType.ALL,
             fetch = FetchType.LAZY,
-            // We need a course in order to save the course material
             optional = false
     )
     @JoinColumn(

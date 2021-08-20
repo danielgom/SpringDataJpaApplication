@@ -1,10 +1,9 @@
 package com.java.springdatajpaapplication.entity;
 
 import lombok.*;
-import org.springframework.lang.Nullable;
 
 import javax.persistence.*;
-import java.util.List;
+import java.util.Objects;
 
 @Entity
 @Getter
@@ -14,16 +13,12 @@ import java.util.List;
 @Builder
 public class Teacher {
 
-
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE)
     private Long teacherId;
 
     private String firstName;
     private String lastName;
-
-    @OneToMany(mappedBy = "teacher", fetch = FetchType.EAGER)
-    private List<Course> courses;
 
     @Override
     public String toString() {
@@ -32,5 +27,18 @@ public class Teacher {
                 ", firstName='" + firstName + '\'' +
                 ", lastName='" + lastName + '\'' +
                 '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Teacher teacher = (Teacher) o;
+        return Objects.equals(teacherId, teacher.teacherId) && Objects.equals(firstName, teacher.firstName) && Objects.equals(lastName, teacher.lastName);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(teacherId, firstName, lastName);
     }
 }
