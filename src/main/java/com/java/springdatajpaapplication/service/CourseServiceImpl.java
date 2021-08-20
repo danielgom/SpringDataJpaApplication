@@ -9,12 +9,11 @@ import com.java.springdatajpaapplication.exception.CourseNotFoundException;
 import com.java.springdatajpaapplication.exception.TeacherNotFoundException;
 import com.java.springdatajpaapplication.repository.CourseRepository;
 import com.java.springdatajpaapplication.repository.TeacherRepository;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
@@ -29,23 +28,22 @@ public class CourseServiceImpl implements CourseService {
         this.teacherRepository = teacherRepository;
     }
 
-    @Override
-    public List<CourseResponse> getAllCourses() {
-        List<Course> allCourses = courseRepository.findAllCourses();
+    public Set<CourseResponse> getAllCourses() {
+        CompletableFuture<Set<Course>> allCourses = courseRepository.findAllCourses();
 
-        return allCourses.stream()
+        return allCourses.thenApply(courses -> courses.stream()
                 .map(this::mapToDto)
-                .collect(Collectors.toList());
+                .collect(Collectors.toUnmodifiableSet()))
+                .join();
     }
 
-    @Override
-    public List<CourseTeacherResponse> getCoursesByTeacherFirstName(String firstName) {
+    public Set<CourseTeacherResponse> getCoursesByTeacherFirstName(String firstName) {
         Teacher teacher = teacherRepository.getTeacherByFirstName(firstName)
                 .orElseThrow(() -> new TeacherNotFoundException(String.format("teacher with name %s, not found", firstName)));
 
-        CompletableFuture<List<Course>> allCourses = courseRepository.findByTeacher(teacher);
+        CompletableFuture<Set<Course>> allCourses = courseRepository.findByTeacher(teacher);
 
-        CompletableFuture<List<CourseTeacherResponse>> courseList = allCourses.thenApply(courses -> courses.stream()
+        CompletableFuture<Set<CourseTeacherResponse>> courseList = allCourses.thenApply(courses -> courses.stream()
                 .map(
                         course -> CourseTeacherResponse.builder()
                                 .courseId(course.getCourseId())
@@ -53,34 +51,30 @@ public class CourseServiceImpl implements CourseService {
                                 .credit(course.getCredit())
                                 .title(course.getTitle())
                                 .build())
-                .toList());
+                .collect(Collectors.toUnmodifiableSet()));
 
         return courseList.join();
     }
 
-    @Override
     public CourseResponse getCourseByTitle(String title) {
 
-        Optional<Course> currentCourse = courseRepository.getCourse(title);
+        Optional<Course> currentCourse = courseRepository.getCourseByTitle(title);
         return currentCourse.map(this::mapToDto)
                 .orElseThrow(() -> new CourseNotFoundException(String.format("course with title %s, not found", title)));
-
     }
 
     @Transactional
-    @Override
     public void createCourse(CourseRequest courseRequest) {
         courseRepository.save(mapToEntity(courseRequest));
     }
 
     @Transactional
-    @Override
-    public void updateCourse(CourseRequest courseRequest) {
-
-        CourseResponse currentCourse = this.getCourseByTitle(courseRequest.getTitle());
+    public void updateCourse(CourseRequest courseRequest, String title) {
 
         Teacher teacher = teacherRepository.getTeacherByFirstName(courseRequest.getTeacherName())
                 .orElseThrow(() -> new TeacherNotFoundException(String.format("teacher with name %s, not found", courseRequest.getTeacherName())));
+
+        CourseResponse currentCourse = this.getCourseByTitle(title);
 
         currentCourse.setTitle(courseRequest.getTitle());
         currentCourse.setCredit(courseRequest.getCredit());
@@ -90,28 +84,37 @@ public class CourseServiceImpl implements CourseService {
                         currentCourse.getCourseId());
     }
 
-    @Override
-    public void updateCoursePartial(Course course) {
+    @Transactional
+    public void updateCoursePartial(CourseRequest courseRequest, String title) {
 
-        CourseResponse currentCourse = this.getCourseByTitle(course.getTitle());
+        CourseResponse currentCourse = this.getCourseByTitle(title);
 
-        if (!course.getTitle().equals("") && course.getTitle() != null) {
-            currentCourse.setTitle(course.getTitle());
-        }
-        if (course.getCredit() != null) {
-            currentCourse.setCredit(course.getCredit());
+        if (courseRequest.getTitle() != null && !courseRequest.getTitle().equals("")) {
+            currentCourse.setTitle(courseRequest.getTitle());
         }
 
-        courseRepository
-                .updateCourse(currentCourse.getCredit(), currentCourse.getTitle(), currentCourse.getTeacher().getTeacherId(),
-                        currentCourse.getCourseId());
+        if (courseRequest.getCredit() != null) {
+            currentCourse.setCredit(courseRequest.getCredit());
+        }
+
+        if (courseRequest.getTeacherName() != null && !courseRequest.getTeacherName().equals("")) {
+            Teacher teacher = teacherRepository.getTeacherByFirstName(courseRequest.getTeacherName())
+                    .orElseThrow(() -> new TeacherNotFoundException(String.format("teacher with name %s, not found", courseRequest.getTeacherName())));
+            currentCourse.setTeacher(teacher);
+        }
+
+        if (currentCourse.getTeacher() == null) {
+            courseRepository.updateCoursePartial(currentCourse.getCredit(), currentCourse.getTitle(), currentCourse.getCourseId());
+        } else {
+            courseRepository.updateCourse(currentCourse.getCredit(), currentCourse.getTitle(), currentCourse.getTeacher().getTeacherId(),
+                            currentCourse.getCourseId());
+        }
     }
 
-    @Override
     @Transactional
-    @Async
     public void deleteCourseByTitle(String title) {
-        CourseResponse courseByTitle = getCourseByTitle(title);
+        Optional<Course> currentCourse = courseRepository.getCourseByTitle(title);
+        currentCourse.ifPresent(courseRepository::delete);
     }
 
     private CourseResponse mapToDto(Course course) {

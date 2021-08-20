@@ -1,0 +1,209 @@
+package com.java.springdatajpaapplication.service;
+
+import com.java.springdatajpaapplication.dto.CourseRequest;
+import com.java.springdatajpaapplication.dto.CourseResponse;
+import com.java.springdatajpaapplication.dto.CourseTeacherResponse;
+import com.java.springdatajpaapplication.entity.Course;
+import com.java.springdatajpaapplication.entity.Teacher;
+import com.java.springdatajpaapplication.exception.CourseNotFoundException;
+import com.java.springdatajpaapplication.repository.CourseRepository;
+import com.java.springdatajpaapplication.repository.TeacherRepository;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.*;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+@ExtendWith(MockitoExtension.class)
+class CourseServiceTest {
+
+    @Mock
+    private CourseRepository courseRepository;
+
+    @Mock
+    private TeacherRepository teacherRepository;
+
+    @InjectMocks
+    private CourseServiceImpl courseService;
+
+    @Captor
+    private ArgumentCaptor<Course> courseArgumentCaptor;
+
+    @BeforeEach
+    public void setup() {
+        courseService = new CourseServiceImpl(courseRepository, teacherRepository);
+    }
+
+    @Test
+    @DisplayName("Should list all Courses")
+    void shouldListAllCourses() {
+
+        Teacher firstTeacher = Teacher.builder().teacherId(1L).firstName("Ivanka").lastName("Certz").build();
+        Teacher secondTeacher = Teacher.builder().teacherId(2L).firstName("Lilia").lastName("Ria").build();
+
+        CompletableFuture<Set<Course>> allCourses = CompletableFuture.completedFuture(Set.of(
+                Course.builder().courseId(12L).title("MBA").credit(200).teacher(firstTeacher).build(),
+                Course.builder().courseId(24L).title("CSS").credit(150).teacher(secondTeacher).build(),
+                Course.builder().courseId(55L).title("AI").credit(250).teacher(firstTeacher).build()
+        ));
+
+        Mockito.when(courseRepository.findAllCourses()).thenReturn(allCourses);
+
+        Set<CourseResponse> resultCourseSet = courseService.getAllCourses();
+
+        assertAll(
+                () -> assertEquals(3, resultCourseSet.size()));
+    }
+
+    @Test
+    @DisplayName("Should find course with valid title")
+    void whenValidTitle_thenCourseShouldBeFound() {
+
+        String courseTitle = "AI";
+
+        Optional<Course> course = Optional.of(Course.builder().courseId(15L).title("AI").credit(250).build());
+
+        Mockito.when(courseRepository.getCourseByTitle(courseTitle)).thenReturn(course);
+
+        CourseResponse courseByTitle = courseService.getCourseByTitle(courseTitle);
+
+        assertAll(
+                () -> assertEquals(15L, courseByTitle.getCourseId()),
+                () -> assertEquals("AI", courseByTitle.getTitle()),
+                () -> assertEquals(250, courseByTitle.getCredit())
+        );
+    }
+
+    @Test
+    @DisplayName("Should throw exception on invalid title")
+    void whenInvalidTitle_thenThrowCourseNotFoundException() {
+
+        String invalidTitle = "NAN";
+
+        Optional<Course> course = Optional.empty();
+
+        Mockito.when(courseRepository.getCourseByTitle(invalidTitle)).thenReturn(course);
+
+        CourseNotFoundException exception = assertThrows(CourseNotFoundException.class,
+                () -> courseService.getCourseByTitle(invalidTitle));
+
+        assertEquals(String.format("course with title %s, not found", invalidTitle), exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("Should list All courses by teacher")
+    void whenValidTeacherFirstName_shouldReturnCourseList() {
+
+        String teacherFistName = "Dan";
+
+        Optional<Teacher> teacher = Optional.of(new Teacher(10L, "Dan", "Gia"));
+
+        CompletableFuture<Set<Course>> allCourses = CompletableFuture.completedFuture(Set.of(
+                Course.builder().courseId(12L).title("MBA").credit(200).teacher(teacher.get()).build(),
+                Course.builder().courseId(24L).title("CSS").credit(150).teacher(teacher.get()).build(),
+                Course.builder().courseId(55L).title("AI").credit(250).teacher(teacher.get()).build()
+        ));
+
+        Mockito.when(teacherRepository.getTeacherByFirstName(teacherFistName)).thenReturn(teacher);
+        Mockito.when(courseRepository.findByTeacher(teacher.get())).thenReturn(allCourses);
+
+        List<CourseTeacherResponse> resultCourseList = courseService.getCoursesByTeacherFirstName(teacherFistName)
+                .stream()
+                .toList();
+
+        assertAll(
+                () -> assertEquals(3, resultCourseList.size()));
+    }
+
+    @Test
+    @DisplayName("Should save course")
+    void shouldSaveCourse() {
+
+        //Course not saved with students at the beginning, not saved with courseId, since this one is generated by DB
+        CourseRequest courseRequest = new CourseRequest(20L, "MMA", 100, null, null);
+
+        courseService.createCourse(courseRequest);
+
+        Mockito.verify(courseRepository, Mockito.times(1)).save(ArgumentMatchers.any(Course.class));
+        Mockito.verify(courseRepository, Mockito.times(1)).save(courseArgumentCaptor.capture());
+
+        assertAll(
+                () -> assertEquals("MMA", courseArgumentCaptor.getValue().getTitle()),
+                () -> assertEquals(100, courseArgumentCaptor.getValue().getCredit()),
+                () -> assertNull(courseArgumentCaptor.getValue().getTeacher()),
+                () -> assertNull(courseArgumentCaptor.getValue().getStudents())
+        );
+    }
+
+    @Test
+    @DisplayName("Should fully update course")
+    void whenValidFullRequest_shouldUpdateCourse() {
+
+        Optional<Teacher> teacher = Optional.of(Teacher.builder()
+                .teacherId(30L)
+                .firstName("Mongua")
+                .lastName("Salam")
+                .build());
+
+        CourseRequest courseRequest = new CourseRequest(20L,
+                "MMA", 100, teacher.get().getFirstName(), null);
+
+        Optional<Course> course = Optional.of(new Course(20L, "MMA",
+                100, null, teacher.get(), null));
+
+        Mockito.when(teacherRepository.getTeacherByFirstName(courseRequest.getTeacherName())).thenReturn(teacher);
+        Mockito.when(courseRepository.getCourseByTitle(courseRequest.getTitle())).thenReturn(course);
+
+        courseService.updateCourse(courseRequest, courseRequest.getTitle());
+
+        Mockito.verify(courseRepository, Mockito.times(1)).updateCourse(
+                100,
+                "MMA",
+                30L,
+                20L);
+    }
+
+    @Test
+    @DisplayName("Should partially update course")
+    void whenValidPartialRequest_shouldUpdateCourse() {
+
+        CourseRequest courseRequest = new CourseRequest(20L,
+                "MMA", 100, null, null);
+
+        Optional<Course> course = Optional.of(new Course(20L, "MMA",
+                100, null, null, null));
+
+        Mockito.when(courseRepository.getCourseByTitle(courseRequest.getTitle())).thenReturn(course);
+
+        courseService.updateCoursePartial(courseRequest, courseRequest.getTitle());
+
+        Mockito.verify(courseRepository, Mockito.times(1)).updateCoursePartial(
+                100,
+                "MMA",
+                20L
+        );
+    }
+
+    @Test
+    @DisplayName("Should delete course")
+    void shouldDeleteCourse() {
+
+        String deleteCourseTitle = "MMA";
+        Optional<Course> course = Optional.of(new Course(20L, "MMA",
+                100, null, null, null));
+        Mockito.when(courseRepository.getCourseByTitle(deleteCourseTitle)).thenReturn(course);
+
+        courseService.deleteCourseByTitle(deleteCourseTitle);
+
+        Mockito.verify(courseRepository, Mockito.times(1)).delete(course.get());
+
+    }
+}

@@ -22,8 +22,11 @@ public class Course {
     private String title;
     private Integer credit;
 
+    @OneToOne(mappedBy = "course", orphanRemoval = true)
+    private CourseMaterial courseMaterial;
+
     @ManyToOne(
-            cascade = CascadeType.ALL,
+            cascade = {CascadeType.DETACH, CascadeType.MERGE},
             fetch = FetchType.EAGER
     )
     @JoinColumn(
