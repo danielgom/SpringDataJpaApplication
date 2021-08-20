@@ -1,5 +1,6 @@
 package com.java.springdatajpaapplication.service;
 
+import com.java.springdatajpaapplication.dto.CourseRequest;
 import com.java.springdatajpaapplication.dto.CourseResponse;
 import com.java.springdatajpaapplication.dto.CourseTeacherResponse;
 import com.java.springdatajpaapplication.entity.Course;
@@ -14,9 +15,9 @@ public interface CourseService {
 
     CourseResponse getCourseByTitle(String title);
 
-    Course createCourse(Course course);
+    void createCourse(CourseRequest courseRequest);
 
-    void updateCourse(Course course);
+    void updateCourse(CourseRequest courseRequest);
 
     void updateCoursePartial(Course course);
 

@@ -1,18 +1,15 @@
 package com.java.springdatajpaapplication.controller;
 
+import com.java.springdatajpaapplication.dto.CourseRequest;
 import com.java.springdatajpaapplication.dto.CourseResponse;
 import com.java.springdatajpaapplication.dto.CourseTeacherResponse;
-import com.java.springdatajpaapplication.entity.Course;
 import com.java.springdatajpaapplication.service.CourseService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 @RestController
 @RequestMapping("/courses")
@@ -42,5 +39,15 @@ public class CourseController {
         return ResponseEntity.status(HttpStatus.OK).body((courseService.getCourseByTitle(title)));
     }
 
+    @PostMapping(value = "/")
+    public ResponseEntity<Void> createCourse(@Valid @RequestBody CourseRequest courseRequest) {
+        courseService.createCourse(courseRequest);
+        return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
 
+    @PutMapping(value = "/")
+    public ResponseEntity<Void> updateCourse(@Valid @RequestBody CourseRequest courseRequest) {
+        courseService.updateCourse(courseRequest);
+        return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
 }

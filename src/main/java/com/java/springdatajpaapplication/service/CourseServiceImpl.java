@@ -1,5 +1,6 @@
 package com.java.springdatajpaapplication.service;
 
+import com.java.springdatajpaapplication.dto.CourseRequest;
 import com.java.springdatajpaapplication.dto.CourseResponse;
 import com.java.springdatajpaapplication.dto.CourseTeacherResponse;
 import com.java.springdatajpaapplication.entity.Course;
@@ -15,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 @Service
 public class CourseServiceImpl implements CourseService {
@@ -29,14 +31,11 @@ public class CourseServiceImpl implements CourseService {
 
     @Override
     public List<CourseResponse> getAllCourses() {
-        CompletableFuture<List<Course>> allCourses = courseRepository.findAllCourses();
+        List<Course> allCourses = courseRepository.findAllCourses();
 
-        CompletableFuture<List<CourseResponse>> courseList = allCourses.thenApply(courses -> courses.stream()
+        return allCourses.stream()
                 .map(this::mapToDto)
-                .toList());
-
-        return courseList.join();
-
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -51,6 +50,7 @@ public class CourseServiceImpl implements CourseService {
                         course -> CourseTeacherResponse.builder()
                                 .courseId(course.getCourseId())
                                 .students(course.getStudents())
+                                .credit(course.getCredit())
                                 .title(course.getTitle())
                                 .build())
                 .toList());
@@ -64,22 +64,30 @@ public class CourseServiceImpl implements CourseService {
         Optional<Course> currentCourse = courseRepository.getCourse(title);
         return currentCourse.map(this::mapToDto)
                 .orElseThrow(() -> new CourseNotFoundException(String.format("course with title %s, not found", title)));
+
     }
 
+    @Transactional
     @Override
-    public Course createCourse(Course course) {
-        return courseRepository.save(course);
+    public void createCourse(CourseRequest courseRequest) {
+        courseRepository.save(mapToEntity(courseRequest));
     }
 
+    @Transactional
     @Override
-    public void updateCourse(Course course) {
+    public void updateCourse(CourseRequest courseRequest) {
 
-        CourseResponse currentCourse = this.getCourseByTitle(course.getTitle());
-        currentCourse.setTitle(course.getTitle());
-        currentCourse.setCredit(course.getCredit());
+        CourseResponse currentCourse = this.getCourseByTitle(courseRequest.getTitle());
 
-        courseRepository
-                .updateCourse(currentCourse.getCredit(), currentCourse.getTitle(), currentCourse.getCourseId());
+        Teacher teacher = teacherRepository.getTeacherByFirstName(courseRequest.getTeacherName())
+                .orElseThrow(() -> new TeacherNotFoundException(String.format("teacher with name %s, not found", courseRequest.getTeacherName())));
+
+        currentCourse.setTitle(courseRequest.getTitle());
+        currentCourse.setCredit(courseRequest.getCredit());
+        currentCourse.setTeacher(teacher);
+
+        courseRepository.updateCourse(currentCourse.getCredit(), currentCourse.getTitle(), currentCourse.getTeacher().getTeacherId(),
+                        currentCourse.getCourseId());
     }
 
     @Override
@@ -95,7 +103,8 @@ public class CourseServiceImpl implements CourseService {
         }
 
         courseRepository
-                .updateCourse(currentCourse.getCredit(), currentCourse.getTitle(), currentCourse.getCourseId());
+                .updateCourse(currentCourse.getCredit(), currentCourse.getTitle(), currentCourse.getTeacher().getTeacherId(),
+                        currentCourse.getCourseId());
     }
 
     @Override
@@ -111,6 +120,13 @@ public class CourseServiceImpl implements CourseService {
                 .credit(course.getCredit())
                 .title(course.getTitle())
                 .teacher(course.getTeacher())
+                .build();
+    }
+
+    private Course mapToEntity(CourseRequest courseRequest) {
+        return Course.builder()
+                .credit(courseRequest.getCredit())
+                .title(courseRequest.getTitle())
                 .build();
     }
 }
