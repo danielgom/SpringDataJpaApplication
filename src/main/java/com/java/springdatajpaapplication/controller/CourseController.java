@@ -46,14 +46,14 @@ public class CourseController {
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
-    @PutMapping(value = "/title/{title}")
+    @PutMapping(value = "/title/{title}", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Void> update(@Valid @RequestBody CourseRequest courseRequest,
                                              @PathVariable String title) {
         courseService.updateCourse(courseRequest, title);
         return ResponseEntity.status(HttpStatus.OK).build();
     }
 
-    @PatchMapping(value = "/title/{title}")
+    @PatchMapping(value = "/title/{title}", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Void> partialUpdate(@Valid @RequestBody CourseRequest courseRequest,
                                              @PathVariable String title) {
         courseService.updateCoursePartial(courseRequest, title);
