@@ -13,16 +13,9 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 @ResponseStatus
 public class EntityExceptionHandler extends ResponseEntityExceptionHandler {
 
-    @ExceptionHandler(CourseNotFoundException.class)
-    public ResponseEntity<ErrorMessage> courseNotFoundException(CourseNotFoundException exception,
-                                                                WebRequest webRequest) {
-        ErrorMessage errorMessage = new ErrorMessage(HttpStatus.NOT_FOUND, exception.getMessage(), webRequest.getContextPath());
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorMessage);
-    }
-
-    @ExceptionHandler(TeacherNotFoundException.class)
-    public ResponseEntity<ErrorMessage> teacherNotFoundException(TeacherNotFoundException exception,
-                                                                 WebRequest webRequest) {
+    @ExceptionHandler(NewNotFoundException.class)
+    public ResponseEntity<ErrorMessage> notFoundException(NewNotFoundException exception,
+                                                          WebRequest webRequest) {
         ErrorMessage errorMessage = new ErrorMessage(HttpStatus.NOT_FOUND, exception.getMessage(), webRequest.getContextPath());
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorMessage);
     }

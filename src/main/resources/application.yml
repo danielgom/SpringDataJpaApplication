@@ -1,0 +1,21 @@
+# PostgreSQL Database configuration
+spring:
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      schema: schooldb
+    password: Dank3409@
+    url: jdbc:postgresql://localhost:5432/Practice
+    username: postgres
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+# Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: '*'
+        exclude: "env,beans,info"

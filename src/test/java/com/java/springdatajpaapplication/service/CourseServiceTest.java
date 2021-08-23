@@ -5,7 +5,7 @@ import com.java.springdatajpaapplication.dto.CourseResponse;
 import com.java.springdatajpaapplication.dto.CourseTeacherResponse;
 import com.java.springdatajpaapplication.entity.Course;
 import com.java.springdatajpaapplication.entity.Teacher;
-import com.java.springdatajpaapplication.exception.CourseNotFoundException;
+import com.java.springdatajpaapplication.exception.NewNotFoundException;
 import com.java.springdatajpaapplication.repository.CourseRepository;
 import com.java.springdatajpaapplication.repository.TeacherRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -92,7 +92,7 @@ class CourseServiceTest {
 
         Mockito.when(courseRepository.getCourseByTitle(invalidTitle)).thenReturn(course);
 
-        CourseNotFoundException exception = assertThrows(CourseNotFoundException.class,
+        NewNotFoundException exception = assertThrows(NewNotFoundException.class,
                 () -> courseService.getCourseByTitle(invalidTitle));
 
         assertEquals(String.format("course with title %s, not found", invalidTitle), exception.getMessage());

@@ -5,8 +5,7 @@ import com.java.springdatajpaapplication.dto.CourseResponse;
 import com.java.springdatajpaapplication.dto.CourseTeacherResponse;
 import com.java.springdatajpaapplication.entity.Course;
 import com.java.springdatajpaapplication.entity.Teacher;
-import com.java.springdatajpaapplication.exception.CourseNotFoundException;
-import com.java.springdatajpaapplication.exception.TeacherNotFoundException;
+import com.java.springdatajpaapplication.exception.NewNotFoundException;
 import com.java.springdatajpaapplication.repository.CourseRepository;
 import com.java.springdatajpaapplication.repository.TeacherRepository;
 import org.springframework.stereotype.Service;
@@ -39,7 +38,7 @@ public class CourseServiceImpl implements CourseService {
 
     public Set<CourseTeacherResponse> getCoursesByTeacherFirstName(String firstName) {
         Teacher teacher = teacherRepository.getTeacherByFirstName(firstName)
-                .orElseThrow(() -> new TeacherNotFoundException(String.format("teacher with name %s, not found", firstName)));
+                .orElseThrow(() -> new NewNotFoundException(String.format("teacher with name %s, not found", firstName)));
 
         CompletableFuture<Set<Course>> allCourses = courseRepository.findByTeacher(teacher);
 
@@ -60,7 +59,7 @@ public class CourseServiceImpl implements CourseService {
 
         Optional<Course> currentCourse = courseRepository.getCourseByTitle(title);
         return currentCourse.map(this::mapToDto)
-                .orElseThrow(() -> new CourseNotFoundException(String.format("course with title %s, not found", title)));
+                .orElseThrow(() -> new NewNotFoundException(String.format("course with title %s, not found", title)));
     }
 
     @Transactional
@@ -72,7 +71,7 @@ public class CourseServiceImpl implements CourseService {
     public void updateCourse(CourseRequest courseRequest, String title) {
 
         Teacher teacher = teacherRepository.getTeacherByFirstName(courseRequest.getTeacherName())
-                .orElseThrow(() -> new TeacherNotFoundException(String.format("teacher with name %s, not found", courseRequest.getTeacherName())));
+                .orElseThrow(() -> new NewNotFoundException(String.format("teacher with name %s, not found", courseRequest.getTeacherName())));
 
         CourseResponse currentCourse = this.getCourseByTitle(title);
 
@@ -99,7 +98,7 @@ public class CourseServiceImpl implements CourseService {
 
         if (courseRequest.getTeacherName() != null && !courseRequest.getTeacherName().equals("")) {
             Teacher teacher = teacherRepository.getTeacherByFirstName(courseRequest.getTeacherName())
-                    .orElseThrow(() -> new TeacherNotFoundException(String.format("teacher with name %s, not found", courseRequest.getTeacherName())));
+                    .orElseThrow(() -> new NewNotFoundException(String.format("teacher with name %s, not found", courseRequest.getTeacherName())));
             currentCourse.setTeacher(teacher);
         }
 

@@ -7,6 +7,7 @@ import com.java.springdatajpaapplication.service.CourseService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
@@ -35,6 +36,7 @@ public class CourseController {
     }
 
     // Any student can access
+    @PreAuthorize("hasAuthority('ROLE_STUDENT')")
     @GetMapping(value = "/title/{title}", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<CourseResponse> getByTitle(@PathVariable String title) {
         return ResponseEntity.status(HttpStatus.OK).body((courseService.getCourseByTitle(title)));

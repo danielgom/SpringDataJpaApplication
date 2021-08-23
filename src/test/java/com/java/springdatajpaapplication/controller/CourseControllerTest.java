@@ -4,17 +4,22 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.java.springdatajpaapplication.dto.CourseRequest;
 import com.java.springdatajpaapplication.dto.CourseResponse;
 import com.java.springdatajpaapplication.entity.Teacher;
-import com.java.springdatajpaapplication.exception.CourseNotFoundException;
+import com.java.springdatajpaapplication.exception.NewNotFoundException;
 import com.java.springdatajpaapplication.service.CourseService;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 import org.skyscreamer.jsonassert.JSONAssert;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureWebMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
@@ -22,7 +27,8 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(CourseController.class)
+@WebMvcTest(value = CourseController.class)
+@AutoConfigureMockMvc(addFilters = false)
 class CourseControllerTest {
 
     @MockBean
@@ -33,6 +39,7 @@ class CourseControllerTest {
 
     @Autowired
     private ObjectMapper objectMapper;
+
 
     @Test
     @DisplayName("Should return course with valid title")
@@ -108,7 +115,7 @@ class CourseControllerTest {
         String courseTitle = "SSA";
 
         Mockito.when(courseService.getCourseByTitle(courseTitle))
-                .thenThrow(new CourseNotFoundException(String.format("course with title %s not found", courseTitle)));
+                .thenThrow(new NewNotFoundException(String.format("course with title %s not found", courseTitle)));
 
         MvcResult actualResult = mockMvc.perform(MockMvcRequestBuilders
                         .get("/courses/title/" + courseTitle))
