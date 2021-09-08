@@ -5,21 +5,19 @@ import com.java.springdatajpaapplication.dto.CourseRequest;
 import com.java.springdatajpaapplication.dto.CourseResponse;
 import com.java.springdatajpaapplication.entity.Teacher;
 import com.java.springdatajpaapplication.exception.NewNotFoundException;
+import com.java.springdatajpaapplication.security.JWTProvider;
 import com.java.springdatajpaapplication.service.CourseService;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 import org.skyscreamer.jsonassert.JSONAssert;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureWebMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
@@ -28,7 +26,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(value = CourseController.class)
-@AutoConfigureMockMvc(addFilters = false)
 class CourseControllerTest {
 
     @MockBean
@@ -40,9 +37,15 @@ class CourseControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @MockBean
+    private PasswordEncoder passwordEncoder;
+
+    @MockBean
+    private JWTProvider jwtProvider;
 
     @Test
     @DisplayName("Should return course with valid title")
+    @WithMockUser(username = "john", roles = { "STUDENT" })
     void whenValidTitle_shouldGetCourse() throws Exception {
 
         String courseTitle = "MBA";
@@ -110,6 +113,7 @@ class CourseControllerTest {
 
     @Test
     @DisplayName("Should return not found with invalid title")
+    @WithMockUser(username = "john", roles = { "STUDENT" })
     void whenInvalidTitle_shouldReturnNotFound() throws Exception{
 
         String courseTitle = "SSA";
@@ -139,6 +143,7 @@ class CourseControllerTest {
 
     @Test
     @DisplayName("Should fully update course")
+    @WithMockUser(username = "john", roles = { "ADMIN" })
     void whenValidFullRequest_shouldUpdateCourse() throws Exception {
 
         String courseTitle = "MBA";

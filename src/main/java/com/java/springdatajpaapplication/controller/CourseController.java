@@ -48,6 +48,7 @@ public class CourseController {
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping(value = "/title/{title}", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Void> update(@Valid @RequestBody CourseRequest courseRequest,
                                              @PathVariable String title) {
